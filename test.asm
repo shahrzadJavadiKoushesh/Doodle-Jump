@@ -169,44 +169,32 @@ CODE SEGMENT PARA 'CODE'
     CLEAR_SCREEN ENDP  
     
     
-    MOV_BALL PROC NEAR 
-        
+    MOV_BALL PROC NEAR
+         
+      CHECK_KEY_STROKE:
        ;CHECK IF ANY KEY IS BEING PRESSED, IF NOT EXIT THE PROCEDURE
-      ; MOV AH, 01H
-      ; INT 16H
-      ; JZ CHECK_BALL_MOVEMENT ;ZF = 1 -> JZ IS ACTIVATED
+       MOV AH, 01H
+       INT 16H
        
-       ;CHECK WHICH KEY IS BEING PRESSED, AL = ASCII CAHR
+       ;CHECK WHICH KEY IS BEING PRESSED, AL = ASCII CAHR 
+       JZ CHECK_INPUT
        MOV AH, 00H
-       INT 16H 
-       
+       INT 16H
+       JMP CHECK_KEY_STROKE
+            
+       CHECK_INPUT:
        ;IF 'J'OR 'j' MOVE LEFT
-       CMP AL,4AH ;J
+       CMP AL, 4AH ;J
        JE MOV_BALL_LEFT
-       CMP AL, 6AH
+       CMP AL, 6AH ;j
        JE MOV_BALL_LEFT
        
        ;IF 'K'OR 'k' MOVE RIGHT
-       CMP AL,4BH ;J
+       CMP AL,4BH ;K
        JE MOV_BALL_RIGHT
-       CMP AL, 6BH
+       CMP AL, 6BH;k
        JE MOV_BALL_RIGHT 
        
-       MOV_BALL_LEFT:
-        MOV AX, BALL_V_X 
-        SUB BALL_X, AX
-        
-       MOV_BALL_RIGHT:
-        MOV AX, BALL_V_X 
-        ADD BALL_X, AX
-           
-       
-        
-       ;MOV AX, BALL_V_X    
-       ;ADD BALL_X, AX   ;MOVE THE BALL HORIZONTALY 
-       
-       ;MOV AX, BALL_V_Y
-       ;ADD BALL_Y, AX   ;MOVE THE BALL VERTICALLY
        
        ;COLLISON  
        MOV AX, WINDOW_BOUNCE
@@ -227,7 +215,24 @@ CODE SEGMENT PARA 'CODE'
         RET
         
       
-    MOV_BALL ENDP
+    MOV_BALL ENDP 
+    
+    
+    MOV_BALL_RIGHT PROC NEAR
+        MOV AX, BALL_V_X 
+        ADD BALL_X, AX
+        
+      RET
+        
+     MOV_BALL_RIGHT ENDP 
+    
+    
+     MOV_BALL_LEFT PROC NEAR
+        MOV AX, BALL_V_X 
+        SUB BALL_X, AX
+        
+        RET
+     MOV_BALL_LEFT ENDP 
     
     
 CODE ENDS
