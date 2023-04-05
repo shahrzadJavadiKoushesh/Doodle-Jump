@@ -14,9 +14,15 @@ DATA SEGMENT PARA 'DATA'
     BALL_Y DW 0Ah   ;Y OF THE BLL  
     BALL_SIZE DW 08h ;SIZE OF THE BALL 
     BALL_V_X DW 02H  ;X VELOCITY OF THE BALL
-    BALL_V_Y DW 02H  ;Y VELOCITY OF THE BALL                        
+    BALL_V_Y DW 02H  ;Y VELOCITY OF THE BALL 
     
+    ;VARIAVLES FOR PADDLES
+    PADDLE_LEFT_X DW 00AH
+    PADDLE_LEFT_Y DW 0B4H
     
+    PADDLE_WIDTH DW 014H
+    PADDLE_HEIGHT DW 005H
+                            
 DATA ENDS
 
 
@@ -48,6 +54,8 @@ CODE SEGMENT PARA 'CODE'
         
          CALL DRAW_BALL
          
+         CALL DRAW_PADDLES
+                  
          JMP CHECK_TIME    ;CHECKS TIME AGAIN AFTER EVERYTHING  
       
       RET
@@ -80,7 +88,35 @@ CODE SEGMENT PARA 'CODE'
        
         
       RET 
-    DRAW_BALL ENDP 
+    DRAW_BALL ENDP
+    
+    
+    DRAW_PADDLES PROC NEAR
+        
+        MOV CX, PADDLE_LEFT_X
+        MOV DX, PADDLE_LEFT_Y 
+        
+        DRAW_PADDLE_LEFT_HORIZONTAL:
+            MOV AH, 0CH
+            MOV AL, 0FH
+            MOV BH, 00H
+            INT 10H 
+            
+            INC CX        ; CX++
+            MOV AX, CX              
+            SUB AX, PADDLE_LEFT_X
+            CMP AX, PADDLE_WIDTH
+            JNG DRAW_PADDLE_LEFT_HORIZONTAL 
+            
+            MOV CX, PADDLE_LEFT_X ;CX GOES BACK TO INITIAL COL
+            INC DX         ; ADVANCE ONE LINE 
+            MOV AX, DX
+            SUB AX, PADDLE_LEFT_Y          ; same logic for y
+            CMP AX, PADDLE_HEIGHT
+            JNG DRAW_PADDLE_LEFT_HORIZONTAL
+        
+         RET
+    DRAW_PADDLES ENDP
     
     
     CLEAR_SCREEN PROC NEAR
