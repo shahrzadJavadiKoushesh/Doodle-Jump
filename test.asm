@@ -20,8 +20,13 @@ DATA SEGMENT PARA 'DATA'
     PADDLE_LEFT_X DW 00AH
     PADDLE_LEFT_Y DW 0B4H
     
-    PADDLE_WIDTH DW 014H
-    PADDLE_HEIGHT DW 005H
+    PADDLE_RIGHT_X DW 110H
+    PADDLE_RIGHT_Y DW 0B4H
+    
+    PADDLE_WIDTH DW 01FH
+    PADDLE_HEIGHT DW 005H 
+    
+    
                             
 DATA ENDS
 
@@ -91,7 +96,9 @@ CODE SEGMENT PARA 'CODE'
     DRAW_BALL ENDP
     
     
-    DRAW_PADDLES PROC NEAR
+    DRAW_PADDLES PROC NEAR 
+        
+        ;LEFT PADDLE
         
         MOV CX, PADDLE_LEFT_X
         MOV DX, PADDLE_LEFT_Y 
@@ -113,7 +120,33 @@ CODE SEGMENT PARA 'CODE'
             MOV AX, DX
             SUB AX, PADDLE_LEFT_Y          ; same logic for y
             CMP AX, PADDLE_HEIGHT
-            JNG DRAW_PADDLE_LEFT_HORIZONTAL
+            JNG DRAW_PADDLE_LEFT_HORIZONTAL  
+            
+               
+        ;RIGHT PADDLE  
+        
+        MOV CX, PADDLE_RIGHT_X
+        MOV DX, PADDLE_RIGHT_Y 
+           
+        
+        DRAW_PADDLE_RIGHT_HORIZONTAL:
+            MOV AH, 0CH
+            MOV AL, 0FH
+            MOV BH, 00H
+            INT 10H 
+            
+            INC CX        ; CX++
+            MOV AX, CX              
+            SUB AX, PADDLE_RIGHT_X
+            CMP AX, PADDLE_WIDTH
+            JNG DRAW_PADDLE_RIGHT_HORIZONTAL 
+            
+            MOV CX, PADDLE_RIGHT_X ;CX GOES BACK TO INITIAL COL
+            INC DX         ; ADVANCE ONE LINE 
+            MOV AX, DX
+            SUB AX, PADDLE_RIGHT_Y          ; same logic for y
+            CMP AX, PADDLE_HEIGHT
+            JNG DRAW_PADDLE_RIGHT_HORIZONTAL
         
          RET
     DRAW_PADDLES ENDP
