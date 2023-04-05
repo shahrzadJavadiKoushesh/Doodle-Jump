@@ -209,7 +209,11 @@ CODE SEGMENT PARA 'CODE'
        SUB AX, WINDOW_BOUNCE
       
        CMP BALL_Y, AX
-       JG NEG_VELOCITY_Y ;BALL_Y > WINDOS_HEIGHT - BALL_SIZE -> COLLIDED 
+       JG NEG_VELOCITY_Y ;BALL_Y > WINDOS_HEIGHT - BALL_SIZE -> COLLIDED  
+       
+       NEG_VELOCITY_Y:
+        NEG BALL_V_Y
+        RET
        
        ;COLLISION WITH RIGHT PADDLE 
        
@@ -239,24 +243,41 @@ CODE SEGMENT PARA 'CODE'
        RET                    ;EXIT THIS PROC
        
              
-       ;COLLISION WITH LEFT PADDLE
-       CHECK_COLLISION_WITH_LEFT_PADDLE:
-            
+       ;COLLISION WITH LEFT PADDLE 
+       
+       CHECK_COLLISION_WITH_LEFT_PADDLE: 
+       MOV AX, PADDLE_LEFT_X
+       ADD AX, PADDLE_WIDTH ;MAXX1
+       CMP AX, BALL_X       ;MINX2
+       JNG EXIT_COLLISION_CHECK   ;IF THERE'S NO COLLISION, EXIT COLLISION CHECK
        
        
+       MOV AX, BALL_X
+       ADD AX, BALL_SIZE      ;MAXX2
+       CMP PADDLE_LEFT_X, AX ;MINX1
+       JNL EXIT_COLLISION_CHECK   ;IF THERE'S NO COLLISION, EXIT COLLISION CHECK 
+        
+        
+       MOV AX, BALL_Y
+       ADD AX, BALL_SIZE             ;MAXY1
+       CMP AX, PADDLE_LEFT_Y        ;MINY2
+       JNG EXIT_COLLISION_CHECK   ;IF THERE'S NO COLLISION, EXIT COLLISION CHECK
+        
+        
+       MOV AX, BALL_X
+       ADD AX, BALL_SIZE      ;MAXY2
+       CMP PADDLE_LEFT_Y, AX ;MINY1
+       JNL EXIT_COLLISION_CHECK   ;IF THERE'S NO COLLISION, EXIT COLLISION CHECK 
        
        
+       ;IF IT REACHES HERE, THERE'S A COLLISION WITH THE LEFT PADDLE
+       NEG BALL_V_Y           ;REVERSE VERTICAL VELOCITY OF THE BALL 
+       RET  
        
-       RET 
-       
-       NEG_VELOCITY_Y:
-        NEG BALL_V_Y
+       EXIT_COLLISION_CHECK:
         RET
-        
-        
-        
-        
       
+ 
     MOV_BALL ENDP 
     
     
