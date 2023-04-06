@@ -244,6 +244,7 @@ CODE SEGMENT PARA 'CODE'
        ;IF IT REACHES HERE, THERE'S A COLLISION WITH THE RIGHT PADDLE
        NEG BALL_V_Y           ;REVERSE VERTICAL VELOCITY OF THE BALL 
        INC PADDLE_RIGHT_POINT
+       CALL UPDATE_POINTS
        RET                    ;EXIT THIS PROC
         
        
@@ -300,18 +301,12 @@ CODE SEGMENT PARA 'CODE'
         
         XOR AX, AX                ;CLEAR AX
         MOV AX, PADDLE_LEFT_POINT ;PADDLE LEFT POINTS
+        ADD AX, PADDLE_RIGHT_POINT
         
         ;NOW BEFORE PRINTING TO THE SCREEN WE NEED RO CONVERT DECIMAL VAL TO THE ASCII CODE CHAR
         ;WE DO THIS BU ADDING 30H AND BY SUBTRACTING 30H WE CONVERT ASCII TO NUMBER
         ADD AL, 30H
-        MOV [TEXT_PLAYER_POINTS], AL
-        
-        
-        
-        
-        
-        
-                       
+        MOV [TEXT_PLAYER_POINTS], AL            
                        
        RET                
      UPDATE_POINTS ENDP
