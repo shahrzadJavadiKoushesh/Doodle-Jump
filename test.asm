@@ -1,3 +1,5 @@
+.MODEL MEDIUM
+
 STACK SEGMENT PARA STACK 
    DB 64 DUP (' ')     ;FILL THE STACK WITH 64 EMPTY SPACES
 STACK ENDS
@@ -8,8 +10,11 @@ DATA SEGMENT PARA 'DATA'
     WINDOW_BOUNCE DW 6
     
     TEXT_PLAYER_POINTS DB '0','$'   ;TEXT WITH PLATER'S POINTS
+    TEXT_GAME_OVER DB 'GAME OVER', '$' ;GAME OVER TITLE
   
     TIME_AUX DB 0   ;VARIABLE USED WHEN CHECKING IF THE TIME HAS CHANGED
+    GAME_ACTIVE DB 1;CHECK IF THE GAME IS ACTIVE. 1 -> YES, 0 -> NO 
+    
     BALL_X DW 0Ah   ;X OF THE BALL
     BALL_Y DW 0Ah   ;Y OF THE BLL  
     BALL_SIZE DW 08h ;SIZE OF THE BALL 
@@ -47,14 +52,17 @@ CODE SEGMENT PARA 'CODE'
       
 
       CHECK_TIME:      ;TIME CHECKING LOOP
+      
+         CMP GAME_ACTIVE, 00H
+         JE  SHOW_GAME_OVER
+         
+         
          MOV AH, 2CH   ; GET THE SYSTEM TIME
          INT 21H       ;CH = HOUR CL = MINUTE DH = SECOND DL = 1/100 SECOND 
       
          CMP DL, TIME_AUX
          JE CHECK_TIME ; IF IT IS THE SAME, CHECK AGAIN
-         MOV TIME_AUX, DL  ;UPDATE TIME
-           
-         
+         MOV TIME_AUX, DL  ;UPDATE TIME                                         
          CALL CLEAR_SCREEN
              
          CALL MOV_BALL 
@@ -65,14 +73,18 @@ CODE SEGMENT PARA 'CODE'
          
          CALL DRAW_UI      ;DRAW USER'S POINT
                   
-         JMP CHECK_TIME    ;CHECKS TIME AGAIN AFTER EVERYTHING  
+         JMP CHECK_TIME    ;CHECKS TIME AGAIN AFTER EVERYTHING
+         
+         SHOW_GAME_OVER:
+            CALL DRAW_GAME_OVER 
+            JMP CHECK_TIME 
       
       RET
     
     MAIN ENDP 
     
     
-    DRAW_BALL PROC NEAR 
+    DRAW_BALL PROC NEAR
        
       MOV CX, BALL_X   ; SET THE INITIAL COLUMN (X)
       MOV DX, BALL_Y   ; SET THE INITIAL ROW (Y) 
@@ -167,7 +179,6 @@ CODE SEGMENT PARA 'CODE'
         MOV AH, 09H   ;WRITE STRING TO OUTPU
         LEA DX, TEXT_PLAYER_POINTS 
         INT 21H
-          
         
         RET
     DRAW_UI ENDP
@@ -197,26 +208,26 @@ CODE SEGMENT PARA 'CODE'
        CMP AL,4BH ;K
        JE MOV_BALL_RIGHT
        CMP AL, 6BH;k
-       JE MOV_BALL_RIGHT 
+       JE MOV_BALL_RIGHT
        
-       
-       ;COLLISON  
        MOV AX, BALL_V_Y
        ADD BALL_Y, AX   ;MOVE THE BALL VERTICALLY
        
+       ;MOV AX, BALL_V_X
+       ;ADD BALL_X, AX   ;MOV THE BALL HORIZONTALLY 
        
        ;COLLISON WITH THE BOTTOM OF THE SCREEN 
        MOV AX, WINDOW_BOUNCE
        CMP BALL_Y, AX  ;BALL_Y < 0 -> COLLIDED
-       ;JMP GAME_OVER
-       JL NEG_VELOCITY_Y 
+       JL NEG_VELOCITY_Y
        
        MOV AX, WINDOW_HEIGHT
        SUB AX, BALL_SIZE 
        SUB AX, WINDOW_BOUNCE
       
        CMP BALL_Y, AX
-       JG NEG_VELOCITY_Y ;BALL_Y > WINDOS_HEIGHT - BALL_SIZE -> COLLIDED 
+       JG NEG_VELOCITY_Y ;BALL_Y > WINDOS_HEIGHT - BALL_SIZE -> COLLIDED
+        
        
        ;COLLISION WITH RIGHT PADDLE 
        
@@ -247,23 +258,19 @@ CODE SEGMENT PARA 'CODE'
        CALL UPDATE_POINTS
        RET                    ;EXIT THIS PROC
         
-       
        NEG_VELOCITY_Y:
-        NEG BALL_V_Y
+        NEG BALL_V_Y 
+        JMP GAME_OVER
         RET
-    
+        
     MOV_BALL ENDP 
-    
     
      MOV_BALL_RIGHT PROC NEAR
         MOV AX, BALL_V_X 
         ADD BALL_X, AX
-        
-      RET
-        
-     MOV_BALL_RIGHT ENDP 
-    
-    
+      RET 
+     MOV_BALL_RIGHT ENDP
+     
      MOV_BALL_LEFT PROC NEAR
         MOV AX, BALL_V_X 
         SUB BALL_X, AX
@@ -295,7 +302,7 @@ CODE SEGMENT PARA 'CODE'
         RET 
        
       RET
-     COLL_LEFT ENDP
+     COLL_LEFT ENDP 
      
      UPDATE_POINTS PROC NEAR
         
@@ -312,11 +319,33 @@ CODE SEGMENT PARA 'CODE'
      UPDATE_POINTS ENDP
      
      GAME_OVER PROC NEAR
-        MOV PADDLE_LEFT_POINT, 00H
-        MOV PADDLE_RIGHT_POINT, 00H
-        RET
+        MOV GAME_ACTIVE, 00H       ; STOPS THE GAME
         
-     CLEAR_SCREEN PROC NEAR 
+        
+        RET
+     GAME_OVER ENDP 
+     
+     DRAW_GAME_OVER PROC NEAR 
+        CALL CLEAR_SCREEN
+        
+        ;SHOW MENU 
+        
+        MOV AH, 02H   ;SET THE CURSOR'S POSITION
+        MOV BH, 00H   ;SET PAGE NUMBER
+        MOV DH, 002H   ;SET ROW
+        MOV DL, 0B0H   ;SET COLUMN 
+        INT 10H
+        
+        MOV AH, 09H   ;WRITE STRING TO OUTPU
+        LEA DX, TEXT_GAME_OVER 
+        INT 21H
+        
+        RET
+     DRAW_GAME_OVER ENDP
+     
+     
+     CLEAR_SCREEN PROC NEAR
+         
         ;CLEAR SCREEN BY SETTING VIDEO MODE
         
          MOV AH, 00h   ; SET VIDEO MODE
@@ -331,6 +360,25 @@ CODE SEGMENT PARA 'CODE'
          RET
         
     CLEAR_SCREEN ENDP 
+     
+    GENERATE_RANDOM PROC NEAR   ; CX INPUT AND DX OUTPUT, DX = A random number in [0, CX) Interval
+        PUSH CX
+        MOV AH,2Ch 					 ;get the system time
+	    INT 21h    					 ;CH = hour CL = minute DH = second DL = 1/100 seconds
+        MOV AL, DH
+        MOV AH, 0
+        MOV BL, DL
+        MUL BL          ; AX = PSEDUO-RANDOM NUMBER
+        POP CX
+        CMP CX, 0
+        JE GENERATE_RANDOM_RET
+        MOV DX, 0 
+        DIV CX          ; DX = RANDOM % CX 
+    
+    GENERATE_RANDOM_RET:
+        RET
+    GENERATE_RANDOM ENDP
+
     
     
 CODE ENDS
