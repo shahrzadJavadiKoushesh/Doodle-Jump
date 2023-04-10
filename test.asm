@@ -212,6 +212,12 @@ CODE SEGMENT PARA 'CODE'
        
        MOV AX, BALL_V_Y
        ADD BALL_Y, AX   ;MOVE THE BALL VERTICALLY
+       MOV BX, 02H
+       ;V_LOOP:
+        ;DEC BX
+        ;CMP BX, 00H
+        ;JLE NEG_VELOCITY_Y
+        ;JMP V_LOOP
        
        ;MOV AX, BALL_V_X
        ;ADD BALL_X, AX   ;MOV THE BALL HORIZONTALLY 
@@ -263,20 +269,23 @@ CODE SEGMENT PARA 'CODE'
         JMP GAME_OVER
         RET
         
-    MOV_BALL ENDP 
+    MOV_BALL ENDP
     
+    MOV_BALL_LEFT PROC NEAR
+        MOV AX, BALL_V_X 
+        SUB BALL_X, AX
+        
+        RET
+     MOV_BALL_LEFT ENDP
+                  
+                  
      MOV_BALL_RIGHT PROC NEAR
         MOV AX, BALL_V_X 
         ADD BALL_X, AX
       RET 
      MOV_BALL_RIGHT ENDP
      
-     MOV_BALL_LEFT PROC NEAR
-        MOV AX, BALL_V_X 
-        SUB BALL_X, AX
-        
-        RET
-     MOV_BALL_LEFT ENDP
+     
      
      COLL_LEFT PROC NEAR  
        
@@ -338,8 +347,14 @@ CODE SEGMENT PARA 'CODE'
         
         MOV AH, 09H   ;WRITE STRING TO OUTPU
         LEA DX, TEXT_GAME_OVER 
-        INT 21H
+        INT 21H 
         
+        ;WAIT FOR A KEY PRESS 
+        MOV AH, 00H
+        INT 16H
+        
+                             
+                             
         RET
      DRAW_GAME_OVER ENDP
      
