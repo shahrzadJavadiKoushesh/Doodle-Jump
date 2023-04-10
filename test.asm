@@ -212,20 +212,17 @@ CODE SEGMENT PARA 'CODE'
        
        MOV AX, BALL_V_Y
        ADD BALL_Y, AX   ;MOVE THE BALL VERTICALLY
-       MOV BX, 02H
-       ;V_LOOP:
-        ;DEC BX
-        ;CMP BX, 00H
-        ;JLE NEG_VELOCITY_Y
-        ;JMP V_LOOP
+       CMP BALL_Y, 00H
+       JL ACC 
        
        ;MOV AX, BALL_V_X
        ;ADD BALL_X, AX   ;MOV THE BALL HORIZONTALLY 
        
-       ;COLLISON WITH THE BOTTOM OF THE SCREEN 
-       MOV AX, WINDOW_BOUNCE
-       CMP BALL_Y, AX  ;BALL_Y < 0 -> COLLIDED
-       JL NEG_VELOCITY_Y
+       ;COLLISON WITH THE BOTTOM OF THE SCREEN
+       
+       ;MOV AX, WINDOW_BOUNCE 
+       ;CMP BALL_Y, AX  ;BALL_Y < 0 -> COLLIDED
+       ;JL NEG_VELOCITY_Y  
        
        MOV AX, WINDOW_HEIGHT
        SUB AX, BALL_SIZE 
@@ -283,7 +280,21 @@ CODE SEGMENT PARA 'CODE'
         MOV AX, BALL_V_X 
         ADD BALL_X, AX
       RET 
-     MOV_BALL_RIGHT ENDP
+     MOV_BALL_RIGHT ENDP  
+     
+     ACC PROC NEAR
+       MOV AX, WINDOW_BOUNCE
+       SUB AX, BALL_SIZE 
+       ;CMP BALL_V_Y, 00H
+       CMP BALL_Y, AX
+       JG  PURE_NEG_V
+       
+       PURE_NEG_V:
+        NEG BALL_V_Y
+        RET
+       
+       RET
+     ACC ENDP
      
      
      
