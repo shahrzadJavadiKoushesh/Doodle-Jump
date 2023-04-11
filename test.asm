@@ -21,7 +21,7 @@ DATA SEGMENT PARA 'DATA'
     BALL_V_X DW 05H  ;X VELOCITY OF THE BALL
     BALL_V_Y DW 05H  ;Y VELOCITY OF THE BALL 
     
-    ;VARIAVLES FOR PADDLES
+    ;VARIABLES FOR PADDLES
     PADDLE_LEFT_X DW 00AH
     PADDLE_LEFT_Y DW 0B4H
     PADDLE_LEFT_POINT DW 0     
@@ -31,9 +31,12 @@ DATA SEGMENT PARA 'DATA'
     PADDLE_RIGHT_POINT DW 0
     
     PADDLE_WIDTH DW 01FH
-    PADDLE_HEIGHT DW 005H 
-                         
-                           
+    PADDLE_HEIGHT DW 005H
+    
+    
+    
+        
+                       
 DATA ENDS
 
 
@@ -165,7 +168,39 @@ CODE SEGMENT PARA 'CODE'
             JNG DRAW_PADDLE_RIGHT_HORIZONTAL
         
          RET
-    DRAW_PADDLES ENDP
+    DRAW_PADDLES ENDP 
+    
+    DRAW_NEW_PADDLE PROC NEAR 
+        CALL GENERATE_RANDOM 
+        MOV AX, CX
+        MOV BX, CX
+        SUB PADDLE_RIGHT_X, AX 
+        SUB PADDLE_RIGHT_Y, BX
+      
+        MOV CX, PADDLE_RIGHT_X
+        MOV DX, PADDLE_RIGHT_Y 
+        
+        DRAW_NEW_PADDLE_RIGHT_HORIZONTAL:
+            MOV AH, 0CH
+            MOV AL, 0FH
+            MOV BH, 00H
+            INT 10H 
+            
+            INC CX        ; CX++
+            MOV AX, CX              
+            SUB AX, PADDLE_RIGHT_X
+            CMP AX, PADDLE_WIDTH
+            JNG DRAW_NEW_PADDLE_RIGHT_HORIZONTAL 
+            
+            MOV CX, PADDLE_RIGHT_X ;CX GOES BACK TO INITIAL COL
+            INC DX         ; ADVANCE ONE LINE 
+            MOV AX, DX
+            SUB AX, PADDLE_RIGHT_Y          ; same logic for y
+            CMP AX, PADDLE_HEIGHT
+            JNG DRAW_NEW_PADDLE_RIGHT_HORIZONTAL
+        
+        RET
+    DRAW_NEW_PADDLE ENDP
     
     ;DISPLAY TEXT (PLAYER'S POINT)
     DRAW_UI PROC NEAR
@@ -213,7 +248,7 @@ CODE SEGMENT PARA 'CODE'
        MOV AX, BALL_V_Y
        ADD BALL_Y, AX   ;MOVE THE BALL VERTICALLY
        CMP BALL_Y, 00H
-       JL ACC 
+       JL COLL_UP
        
        ;MOV AX, BALL_V_X
        ;ADD BALL_X, AX   ;MOV THE BALL HORIZONTALLY 
@@ -257,6 +292,7 @@ CODE SEGMENT PARA 'CODE'
        
        ;IF IT REACHES HERE, THERE'S A COLLISION WITH THE RIGHT PADDLE
        NEG BALL_V_Y           ;REVERSE VERTICAL VELOCITY OF THE BALL 
+       CALL DRAW_NEW_PADDLE
        INC PADDLE_RIGHT_POINT
        CALL UPDATE_POINTS
        RET                    ;EXIT THIS PROC
@@ -282,7 +318,7 @@ CODE SEGMENT PARA 'CODE'
       RET 
      MOV_BALL_RIGHT ENDP  
      
-     ACC PROC NEAR
+     COLL_UP PROC NEAR
        MOV AX, WINDOW_BOUNCE
        SUB AX, BALL_SIZE 
        ;CMP BALL_V_Y, 00H
@@ -294,7 +330,7 @@ CODE SEGMENT PARA 'CODE'
         RET
        
        RET
-     ACC ENDP
+     COLL_UP ENDP
      
      
      
@@ -313,7 +349,8 @@ CODE SEGMENT PARA 'CODE'
        
        
        ;IF IT REACHES HERE, THERE'S A COLLISION WITH THE LEFT PADDLE
-       NEG BALL_V_Y           ;REVERSE VERTICAL VELOCITY OF THE BALL 
+       NEG BALL_V_Y           ;REVERSE VERTICAL VELOCITY OF THE BALL
+       CALL DRAW_NEW_PADDLE 
        INC PADDLE_LEFT_POINT
        CALL UPDATE_POINTS  
        RET  
@@ -374,11 +411,11 @@ CODE SEGMENT PARA 'CODE'
          
         ;CLEAR SCREEN BY SETTING VIDEO MODE
         
-         MOV AH, 00h   ; SET VIDEO MODE
-         MOV AL, 13h   ; CHOOSE THE VIDEO MODE
+         MOV AH, 00h   ;SET VIDEO MODE
+         MOV AL, 13h   ;CHOOSE THE VIDEO MODE
          INT 10h
          
-         MOV AH, 0BH   ; SET THE CONFIGURATION TO THE BACKGROUND COLOR
+         MOV AH, 0BH   ;SET THE CONFIGURATION TO THE BACKGROUND COLOR
          MOV BH, 00H
          MOV BL, 00H   ;CHOOSE BLACK AS BACKGROUND COLOR
          INT 10H 
@@ -387,24 +424,16 @@ CODE SEGMENT PARA 'CODE'
         
     CLEAR_SCREEN ENDP 
      
-    GENERATE_RANDOM PROC NEAR   ; CX INPUT AND DX OUTPUT, DX = A random number in [0, CX) Interval
-        PUSH CX
-        MOV AH,2Ch 					 ;get the system time
-	    INT 21h    					 ;CH = hour CL = minute DH = second DL = 1/100 seconds
-        MOV AL, DH
-        MOV AH, 0
-        MOV BL, DL
-        MUL BL          ; AX = PSEDUO-RANDOM NUMBER
-        POP CX
-        CMP CX, 0
-        JE GENERATE_RANDOM_RET
-        MOV DX, 0 
-        DIV CX          ; DX = RANDOM % CX 
-    
-    GENERATE_RANDOM_RET:
+    GENERATE_RANDOM PROC NEAR   
+        MOV AH, 00H             ;GET SYSTEM TIME
+        INT 1AH                 ;CX:DX now hold number of clock ticks since midnight
+        MOV AX, DX
+        XOR DX, DX
+        MOV CX, 10
+        DIV CX                  ;DX IS THE REMAINDER OF THE DIV - FROM 0 TO 9
         RET
     GENERATE_RANDOM ENDP
-
+        
     
     
 CODE ENDS
