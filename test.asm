@@ -17,7 +17,7 @@ DATA SEGMENT PARA 'DATA'
     
     BALL_X DW 0Ah   ;X OF THE BALL
     BALL_Y DW 0Ah   ;Y OF THE BLL  
-    BALL_SIZE DW 08h ;SIZE OF THE BALL 
+    BALL_SIZE DW 08H ;SIZE OF THE BALL 
     BALL_V_X DW 05H  ;X VELOCITY OF THE BALL
     BALL_V_Y DW 05H  ;Y VELOCITY OF THE BALL 
     
@@ -33,11 +33,9 @@ DATA SEGMENT PARA 'DATA'
     PADDLE_WIDTH DW 01FH
     PADDLE_HEIGHT DW 005H  
     
-    I DW 05D
-    
-    
-    
-        
+    BAR_X DW 8DH
+    BAR_Y DW 5DH
+    BAR_SIZE DW 08H   
                        
 DATA ENDS
 
@@ -73,6 +71,8 @@ CODE SEGMENT PARA 'CODE'
          CALL MOV_BALL 
         
          CALL DRAW_BALL
+         
+         CALL DRAW_BAR
          
          CALL DRAW_PADDLES
          
@@ -114,7 +114,33 @@ CODE SEGMENT PARA 'CODE'
        
         
       RET 
-    DRAW_BALL ENDP
+    DRAW_BALL ENDP 
+    
+    DRAW_BAR PROC NEAR 
+        MOV CX, BAR_X
+        MOV DX, BAR_Y
+        DRAW_BAR_HORIZONTAL:
+                            
+        MOV AH, 0CH   ; SET THE CONFIGURATION TO WRITE A PIXEL
+        MOV AL, 4   ; CHOOSE RED AS COLOR OF THE PIXEL
+        MOV BH, 00H   ; SET THE PAGE NUMBER
+        INT 10H 
+        INC CX        ; CX++
+        MOV AX, CX              ; CX - BALL_X > BALL_SIZE ( Y -> GO TO NEXT LINE, N -> GO TO NEXT COL
+        SUB AX, BAR_X
+        CMP AX, BAR_SIZE
+        JNG DRAW_BAR_HORIZONTAL
+        MOV CX, BAR_X ;CX GOES BACK TO INITIAL COL
+        INC DX         ; ADVANCE ONE LINE 
+        MOV AX, DX
+        SUB AX, BAR_Y          ; same logic for y
+        CMP AX, BAR_SIZE
+        JNG DRAW_BAR_HORIZONTAL
+        
+        RET
+        
+    DRAW_BAR ENDP
+        
     
     
     DRAW_PADDLES PROC NEAR 
@@ -187,7 +213,7 @@ CODE SEGMENT PARA 'CODE'
         MOV DL, 0C5H   ;SET COLUMN 
         INT 10H
         
-        MOV AH, 09H   ;WRITE STRING TO OUTPU
+        MOV AH, 09H   ;WRITE STRING TO OUTPUT
         LEA DX, TEXT_PLAYER_POINTS 
         INT 21H
         
@@ -220,7 +246,7 @@ CODE SEGMENT PARA 'CODE'
        JE MOV_BALL_RIGHT
        CMP AL, 6BH;k
        JE MOV_BALL_RIGHT
-       
+        
        MOV AX, BALL_V_Y
        ADD BALL_Y, AX   ;MOVE THE BALL VERTICALLY
        CMP BALL_Y, 00H
@@ -287,16 +313,15 @@ CODE SEGMENT PARA 'CODE'
     MOV_BALL ENDP
     
     MOV_BALL_LEFT PROC NEAR
-        MOV AX, BALL_V_X 
-        SUB BALL_X, AX
-        
-        RET
-     MOV_BALL_LEFT ENDP
+     MOV AX, BALL_V_X 
+     SUB BALL_X, AX
+     RET
+    MOV_BALL_LEFT ENDP
                   
                   
      MOV_BALL_RIGHT PROC NEAR
-        MOV AX, BALL_V_X 
-        ADD BALL_X, AX
+      MOV AX, BALL_V_X 
+      ADD BALL_X, AX
       RET 
      MOV_BALL_RIGHT ENDP  
      
@@ -312,14 +337,45 @@ CODE SEGMENT PARA 'CODE'
         RET
        
        RET
-     COLL_UP ENDP
+     COLL_UP ENDP 
      
-     
-     
+   
      COLL_LEFT PROC NEAR  
        
       RET
      COLL_LEFT ENDP 
+     
+     COLL_BAR PROC NEAR
+        MOV AX, BAR_X
+        ADD AX, BAR_SIZE ;MAXX1
+        CMP AX, BALL_X       ;MINX2
+        RET   ;IF THERE'S NO COLLISION, CHECK FOR THE OTHER PADDLE
+       
+        MOV AX, BALL_X
+        ADD AX, BALL_SIZE      ;MAXX2
+        CMP BAR_X, AX ;MINX1
+        RET   ;IF THERE'S NO COLLISION, CHECK FOR THE OTHER PADDLE 
+       
+        MOV AX, BALL_Y
+        ADD AX, BALL_SIZE             ;MAXY1
+        CMP AX, BAR_Y        ;MINY2
+        RET   ;IF THERE'S NO COLLISION, CHECK FOR THE OTHER PADDLE
+       
+        MOV AX, BALL_X
+        ADD AX, BALL_SIZE      ;MAXY2
+        CMP BAR_Y, AX ;MINY1
+        RET   ;IF THERE'S NO COLLISION, CHECK FOR THE OTHER PADDLE
+       
+       
+       ;IF IT REACHES HERE, THERE'S A COLLISION WITH THE RIGHT PADDLE
+       NEG BALL_V_Y           ;REVERSE VERTICAL VELOCITY OF THE BALL 
+       ;CALL DRAW_NEW_PADDLE
+       ;INC PADDLE_RIGHT_POINT
+       ;CALL UPDATE_POINTS 
+       CALL GAME_OVER
+       RET 
+    COLL_BAR ENDP
+     
      
      UPDATE_POINTS PROC NEAR
         
@@ -359,9 +415,7 @@ CODE SEGMENT PARA 'CODE'
         
         ;WAIT FOR A KEY PRESS 
         MOV AH, 00H
-        INT 16H
-        
-                             
+        INT 16H                    
                              
         RET
      DRAW_GAME_OVER ENDP
@@ -397,7 +451,6 @@ CODE SEGMENT PARA 'CODE'
         MUL BX
         ADD AX, 150D
         MOV DX, 0
-        MOV [SI], AX
         RET  
     GENERATE_RANDOM_X ENDP
     
