@@ -22,11 +22,11 @@ DATA SEGMENT PARA 'DATA'
     BALL_V_Y DW 05H  ;Y VELOCITY OF THE BALL 
     
     ;VARIABLES FOR PADDLES
-    PADDLE_LEFT_X DW 00AH
-    PADDLE_LEFT_Y DW 0B4H
+    ;PADDLE_LEFT_X DW 00AH
+    ;PADDLE_LEFT_Y DW 0B4H
     PADDLE_LEFT_POINT DW 0     
     
-    PADDLE_RIGHT_X DW 110H
+    PADDLE_RIGHT_X DW 0A0H
     PADDLE_RIGHT_Y DW 0B4H
     PADDLE_RIGHT_POINT DW 0
     
@@ -116,10 +116,7 @@ CODE SEGMENT PARA 'CODE'
     
     
     DRAW_PADDLES PROC NEAR 
-        
-         
             
-               
         ;RIGHT PADDLE  
         
         MOV CX, PADDLE_RIGHT_X
@@ -149,15 +146,10 @@ CODE SEGMENT PARA 'CODE'
     DRAW_PADDLES ENDP 
     
     DRAW_NEW_PADDLE PROC NEAR 
-        CALL GENERATE_RANDOM 
-        MOV AX, CX
-        ADD AX, AX
-        ADD AX, AX
-        MOV BX, DX
-        ADD BX, BX
-        ADD BX, BX
-        SUB PADDLE_RIGHT_X, AX 
-        SUB PADDLE_RIGHT_Y, BX
+        CALL GENERATE_RANDOM_X
+        MOV PADDLE_RIGHT_X, AX
+        CALL GENERATE_RANDOM_Y 
+        MOV PADDLE_RIGHT_Y, AX
       
         MOV CX, PADDLE_RIGHT_X
         MOV DX, PADDLE_RIGHT_Y 
@@ -281,8 +273,7 @@ CODE SEGMENT PARA 'CODE'
        ;IF IT REACHES HERE, THERE'S A COLLISION WITH THE RIGHT PADDLE
        NEG BALL_V_Y           ;REVERSE VERTICAL VELOCITY OF THE BALL 
        CALL DRAW_NEW_PADDLE
-        
-        INC PADDLE_RIGHT_POINT
+       INC PADDLE_RIGHT_POINT
        CALL UPDATE_POINTS
        RET                    ;EXIT THIS PROC
         
@@ -325,8 +316,6 @@ CODE SEGMENT PARA 'CODE'
      
      COLL_LEFT PROC NEAR  
        
-       
-       
       RET
      COLL_LEFT ENDP 
      
@@ -334,7 +323,7 @@ CODE SEGMENT PARA 'CODE'
         
        ; MOV  AX, 00H                ;CLEAR AX
         MOV AX, PADDLE_LEFT_POINT ;PADDLE LEFT POINTS      
-        MOV DI ,              PADDLE_RIGHT_POINT
+        MOV DI, PADDLE_RIGHT_POINT
         ADD AX, DI
         
         ;NOW BEFORE PRINTING TO THE SCREEN WE NEED RO CONVERT DECIMAL VAL TO THE ASCII CODE CHAR
@@ -394,15 +383,38 @@ CODE SEGMENT PARA 'CODE'
         
     CLEAR_SCREEN ENDP 
      
-    GENERATE_RANDOM PROC NEAR   
+    GENERATE_RANDOM_X PROC NEAR   
         MOV AH, 00H             ;GET SYSTEM TIME
         INT 1AH                 ;CX:DX now hold number of clock ticks since midnight
         MOV AX, DX
-        XOR DX, DX
-        MOV CX, 10
-        DIV CX                  ;DX IS THE REMAINDER OF THE DIV - FROM 0 TO 9
+        MOV DX, 0H
+        MOV BX, 010D
+        DIV BX
+        MOV AL, DL
+        MOV AH, 0
+        MOV BX, 05D             ;MUL THE RANDOM NUMBER
+        MUL BX
+        ADD AX, 150D
+        MOV DX, 0
+        MOV [SI], AX
+        RET  
+    GENERATE_RANDOM_X ENDP
+    
+    GENERATE_RANDOM_Y PROC NEAR 
+        MOV AH, 00H
+        INT 1AH
+        MOV AX, DX
+        MOV DX, 00H
+        MOV BX, 010D
+        DIV BX ; range the number between 0 to 9 dividing by 10
+        MOV AL, DL
+        MOV AH, 0
+        MOV BX, 3D ; multiply the random number to screen X
+        MUL BX 
+        ADD AX, 100D
+        MOV DX, 0
         RET
-    GENERATE_RANDOM ENDP
+    GENERATE_RANDOM_Y ENDP
         
     
     
