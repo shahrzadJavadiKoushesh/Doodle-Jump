@@ -19,8 +19,7 @@ DATA SEGMENT PARA 'DATA'
     BALL_Y DW 0Ah   ;Y OF THE BLL  
     BALL_SIZE DW 08H ;SIZE OF THE BALL 
     BALL_V_X DW 05H  ;X VELOCITY OF THE BALL
-    TEMP_BALL_X DW 00H
-    BALL_V_Y DW 05H  ;Y VELOCITY OF THE BALL 
+    BALL_V_Y DW 03H  ;Y VELOCITY OF THE BALL 
     
     ;VARIABLES FOR PADDLE
     PADDLE_LEFT_POINT DW 0     
@@ -35,6 +34,8 @@ DATA SEGMENT PARA 'DATA'
     ;VARIABLES FOR BARS
     BAR_X_1 DW 8DH
     BAR_Y_1 DW 5DH
+    BAR_X_2 DW 110H
+    BAR_Y_2 DW 8DH
     BAR_SIZE DW 08H   
                        
 DATA ENDS
@@ -71,7 +72,9 @@ CODE SEGMENT PARA 'CODE'
         
          CALL DRAW_BALL
          
-         CALL DRAW_BAR
+         CALL DRAW_BAR_1
+         
+         CALL DRAW_BAR_2
          
          CALL DRAW_PADDLES
          
@@ -115,10 +118,10 @@ CODE SEGMENT PARA 'CODE'
       RET 
     DRAW_BALL ENDP 
     
-    DRAW_BAR PROC NEAR 
+    DRAW_BAR_1 PROC NEAR 
         MOV CX, BAR_X_1
         MOV DX, BAR_Y_1
-        DRAW_BAR_HORIZONTAL:
+        DRAW_BAR_1_HORIZONTAL:
                             
         MOV AH, 0CH   ; SET THE CONFIGURATION TO WRITE A PIXEL
         MOV AL, 4   ; CHOOSE RED AS COLOR OF THE PIXEL
@@ -128,19 +131,46 @@ CODE SEGMENT PARA 'CODE'
         MOV AX, CX              ; CX - BAR_X > BAR_SIZE ( Y -> GO TO NEXT LINE, N -> GO TO NEXT COL
         SUB AX, BAR_X_1
         CMP AX, BAR_SIZE
-        JNG DRAW_BAR_HORIZONTAL
+        JNG DRAW_BAR_1_HORIZONTAL
         MOV CX, BAR_X_1 ;CX GOES BACK TO INITIAL COL
         INC DX         ; ADVANCE ONE LINE 
         MOV AX, DX
         SUB AX, BAR_Y_1          ; SAME LOGIC FOR Y
         CMP AX, BAR_SIZE
-        JNG DRAW_BAR_HORIZONTAL 
+        JNG DRAW_BAR_1_HORIZONTAL 
         
-        JMP COLL_BAR
+        JMP COLL_BAR_1
         
         RET 
         
-    DRAW_BAR ENDP
+    DRAW_BAR_1 ENDP 
+    
+    DRAW_BAR_2 PROC NEAR 
+        MOV CX, BAR_X_2
+        MOV DX, BAR_Y_2
+        DRAW_BAR_2_HORIZONTAL:
+                            
+        MOV AH, 0CH   ; SET THE CONFIGURATION TO WRITE A PIXEL
+        MOV AL, 4   ; CHOOSE RED AS COLOR OF THE PIXEL
+        MOV BH, 00H   ; SET THE PAGE NUMBER
+        INT 10H 
+        INC CX        ; CX++
+        MOV AX, CX              ; CX - BAR_X > BAR_SIZE ( Y -> GO TO NEXT LINE, N -> GO TO NEXT COL
+        SUB AX, BAR_X_2
+        CMP AX, BAR_SIZE
+        JNG DRAW_BAR_2_HORIZONTAL
+        MOV CX, BAR_X_2 ;CX GOES BACK TO INITIAL COL
+        INC DX         ; ADVANCE ONE LINE 
+        MOV AX, DX
+        SUB AX, BAR_Y_2          ; SAME LOGIC FOR Y
+        CMP AX, BAR_SIZE
+        JNG DRAW_BAR_2_HORIZONTAL 
+        
+        JMP COLL_BAR_2
+        
+        RET 
+        
+    DRAW_BAR_2 ENDP
         
     
     
@@ -347,7 +377,7 @@ CODE SEGMENT PARA 'CODE'
       RET
      COLL_LEFT ENDP 
      
-     COLL_BAR PROC NEAR
+     COLL_BAR_1 PROC NEAR
         MOV AX, BAR_X_1
         ADD AX, BAR_SIZE ;MAXX1
         CMP AX, BALL_X       ;MINX2
@@ -374,7 +404,36 @@ CODE SEGMENT PARA 'CODE'
        CALL DRAW_NEW_PADDLE 
        CALL GAME_OVER
        RET 
-    COLL_BAR ENDP
+    COLL_BAR_1 ENDP
+     
+    COLL_BAR_2 PROC NEAR
+        MOV AX, BAR_X_2
+        ADD AX, BAR_SIZE ;MAXX1
+        CMP AX, BALL_X       ;MINX2
+        JNG COLL_LEFT   ;IF THERE'S NO COLLISION, RETURN
+       
+        MOV AX, BALL_X
+        ADD AX, BALL_SIZE      ;MAXX2
+        CMP BAR_X_1, AX ;MINX1
+        JNL COLL_LEFT   ;IF THERE'S NO COLLISION, RETURN 
+       
+        MOV AX, BALL_Y
+        ADD AX, BALL_SIZE             ;MAXY1
+        CMP AX, BAR_Y_2        ;MINY2
+        JNG COLL_LEFT   ;IF THERE'S NO COLLISION, RETURN
+       
+        MOV AX, BALL_X
+        ADD AX, BALL_SIZE      ;MAXY2
+        CMP BAR_Y_2, AX ;MINY1
+        JNL COLL_LEFT   ;IF THERE'S NO COLLISION, RETURN
+       
+       
+       ;IF IT REACHES HERE, THERE'S A COLLISION WITH THE BAR AS AN ENEMY
+       NEG BALL_V_Y           ;REVERSE VERTICAL VELOCITY OF THE BALL 
+       CALL DRAW_NEW_PADDLE 
+       CALL GAME_OVER
+       RET 
+    COLL_BAR_2 ENDP
      
      
      UPDATE_POINTS PROC NEAR
