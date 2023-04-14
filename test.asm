@@ -19,7 +19,7 @@ DATA SEGMENT PARA 'DATA'
     BALL_Y DW 0Ah   ;Y OF THE BLL  
     BALL_SIZE DW 08H ;SIZE OF THE BALL 
     BALL_V_X DW 05H  ;X VELOCITY OF THE BALL
-    BALL_V_Y DW 03H  ;Y VELOCITY OF THE BALL 
+    BALL_V_Y DW 05H  ;Y VELOCITY OF THE BALL 
     
     ;VARIABLES FOR PADDLE
     PADDLE_LEFT_POINT DW 0     
@@ -36,7 +36,11 @@ DATA SEGMENT PARA 'DATA'
     BAR_Y_1 DW 5DH
     BAR_X_2 DW 110H
     BAR_Y_2 DW 8DH
-    BAR_SIZE DW 08H   
+    BAR_SIZE DW 08H
+    
+    ;VARIABLES FOR ACCELERATING VELOCITY
+    INCREASING_FLAG DB 0  ;TO CHECK IF WE'RE IN THE MODE TO INCREASE VELOCITY OR NOT
+    COUNT DB 0;   
                        
 DATA ENDS
 
@@ -65,8 +69,11 @@ CODE SEGMENT PARA 'CODE'
       
          CMP DL, TIME_AUX
          JE CHECK_TIME ; IF IT IS THE SAME, CHECK AGAIN
-         MOV TIME_AUX, DL  ;UPDATE TIME                                         
+         MOV TIME_AUX, DL  ;UPDATE TIME
+                                                  
          CALL CLEAR_SCREEN
+         
+         CALL ACCELERATING_V
              
          CALL MOV_BALL
         
@@ -88,7 +95,34 @@ CODE SEGMENT PARA 'CODE'
       
       RET
     
-    MAIN ENDP 
+    MAIN ENDP
+    
+    
+    ;ACCELERATING THE VELICITY
+    ACCELERATING_V PROC NEAR
+        IS_INCREASING:
+            CMP INCREASING_FLAG, 1
+            JNE NOT_INCREASING
+            JMP INCREASE
+        INCREASE:
+            CMP BALL_V_Y, 5
+            JGE NOT_INCREASING
+            CMP COUNT, 12
+            JL INC_COUNT
+            INC BALL_V_Y
+            MOV COUNT, 0
+            JMP END_INC
+        NOT_INCREASING:
+            MOV INCREASING_FLAG, 0
+            RET    
+        END_INC:
+            RET
+        INC_COUNT:
+            INC COUNT
+        
+        
+        RET
+    ACCELERATING_V ENDP
     
     
     DRAW_BALL PROC NEAR
@@ -307,34 +341,7 @@ CODE SEGMENT PARA 'CODE'
        JG COLL_RIGHT
        RET
         
-       COLL_RIGHT:
-        MOV AX, PADDLE_RIGHT_X
-        ADD AX, PADDLE_WIDTH ;MAXX1
-        CMP AX, BALL_X       ;MINX2
-        JNG COLL_LEFT   ;IF THERE'S NO COLLISION, RETURN
-       
-        MOV AX, BALL_X
-        ADD AX, BALL_SIZE      ;MAXX2
-        CMP PADDLE_RIGHT_X, AX ;MINX1
-        JNL COLL_LEFT   ;IF THERE'S NO COLLISION, RETURN 
-       
-        MOV AX, BALL_Y
-        ADD AX, BALL_SIZE             ;MAXY1
-        CMP AX, PADDLE_RIGHT_Y        ;MINY2
-        JNG COLL_LEFT   ;IF THERE'S NO COLLISION, RETURN
-       
-        MOV AX, BALL_X
-        ADD AX, BALL_SIZE      ;MAXY2
-        CMP PADDLE_RIGHT_Y, AX ;MINY1
-        JNL COLL_LEFT   ;IF THERE'S NO COLLISION, RETURN
-       
-       
-       ;IF IT REACHES HERE, THERE'S A COLLISION WITH THE RIGHT PADDLE
-       NEG BALL_V_Y           ;REVERSE VERTICAL VELOCITY OF THE BALL 
-       CALL DRAW_NEW_PADDLE
-       INC PADDLE_RIGHT_POINT
-       CALL UPDATE_POINTS 
-       RET                    ;EXIT THIS PROC
+       CALL COLL_RIGHT
         
        NEG_VELOCITY_Y:
         NEG BALL_V_Y 
@@ -360,7 +367,6 @@ CODE SEGMENT PARA 'CODE'
      COLL_UP PROC NEAR
        MOV AX, WINDOW_BOUNCE
        SUB AX, BALL_SIZE 
-       ;CMP BALL_V_Y, 00H
        CMP BALL_Y, AX
        JG  PURE_NEG_V
        
@@ -369,7 +375,39 @@ CODE SEGMENT PARA 'CODE'
         RET
        
        RET
-     COLL_UP ENDP 
+     COLL_UP ENDP
+     
+     COLL_RIGHT PROC NEAR
+        MOV AX, PADDLE_RIGHT_X
+        ADD AX, PADDLE_WIDTH ;MAXX1
+        CMP AX, BALL_X       ;MINX2
+        JNG COLL_LEFT   ;IF THERE'S NO COLLISION, RETURN
+       
+        MOV AX, BALL_X
+        ADD AX, BALL_SIZE      ;MAXX2
+        CMP PADDLE_RIGHT_X, AX ;MINX1
+        JNL COLL_LEFT   ;IF THERE'S NO COLLISION, RETURN 
+       
+        MOV AX, BALL_Y
+        ADD AX, BALL_SIZE             ;MAXY1
+        CMP AX, PADDLE_RIGHT_Y        ;MINY2
+        JNG COLL_LEFT   ;IF THERE'S NO COLLISION, RETURN
+       
+        MOV AX, BALL_X
+        ADD AX, BALL_SIZE      ;MAXY2
+        CMP PADDLE_RIGHT_Y, AX ;MINY1
+        JNL COLL_LEFT   ;IF THERE'S NO COLLISION, RETURN
+       
+       
+       ;IF IT REACHES HERE, THERE'S A COLLISION WITH THE RIGHT PADDLE
+       NEG BALL_V_Y           ;REVERSE VERTICAL VELOCITY OF THE BALL 
+       CALL DRAW_NEW_PADDLE
+       INC PADDLE_RIGHT_POINT
+       MOV INCREASING_FLAG, 1
+       CALL UPDATE_POINTS 
+       RET                    ;EXIT THIS PROC 
+       
+    COLL_RIGHT ENDP
      
    
      COLL_LEFT PROC NEAR  
