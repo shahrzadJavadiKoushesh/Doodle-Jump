@@ -12,5 +12,5 @@ masm /a test.asm
 link test
 test
 ```
-In this game, there are two enemies which are red and the player loses 2 points if the ball is collided with them. The location of the paddle changes every time the ball is collided with it randomly. if the ball reaches the ground, the game is over immediately.
+In this game, there are two enemies which are red and the player loses 2 points if the ball is collided with them. The location of the paddle changes every time the ball is collided with it randomly. If the ball reaches the ground, the game is over immediately.
 
